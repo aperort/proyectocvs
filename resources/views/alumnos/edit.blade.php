@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Alumno</title>
+    <title>Editar Alumno</title>
     <style>
         * {
             margin: 0;
@@ -58,6 +58,11 @@
             font-size: 12px;
             margin-top: 5px;
         }
+        .current-photo {
+            max-width: 150px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
         .buttons {
             display: flex;
             gap: 10px;
@@ -89,14 +94,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>Crear Nuevo Alumno</h1>
+        <h1>Editar Alumno: {{ $alumno->nombre }} {{ $alumno->apellidos }}</h1>
 
-        <form action="{{ route('alumnos.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('alumnos.update', $alumno) }}" method="POST" enctype="multipart/form-data">
             @csrf
+            @method('PUT')
 
             <div class="form-group">
                 <label for="nombre">Nombre *</label>
-                <input type="text" id="nombre" name="nombre" value="{{ old('nombre') }}" required>
+                <input type="text" id="nombre" name="nombre" value="{{ old('nombre', $alumno->nombre) }}" required>
                 @error('nombre')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -104,7 +110,7 @@
 
             <div class="form-group">
                 <label for="apellidos">Apellidos *</label>
-                <input type="text" id="apellidos" name="apellidos" value="{{ old('apellidos') }}" required>
+                <input type="text" id="apellidos" name="apellidos" value="{{ old('apellidos', $alumno->apellidos) }}" required>
                 @error('apellidos')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -112,7 +118,7 @@
 
             <div class="form-group">
                 <label for="telefono">Teléfono *</label>
-                <input type="tel" id="telefono" name="telefono" value="{{ old('telefono') }}" required>
+                <input type="tel" id="telefono" name="telefono" value="{{ old('telefono', $alumno->telefono) }}" required>
                 @error('telefono')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -120,7 +126,7 @@
 
             <div class="form-group">
                 <label for="correo">Correo Electrónico *</label>
-                <input type="email" id="correo" name="correo" value="{{ old('correo') }}" required>
+                <input type="email" id="correo" name="correo" value="{{ old('correo', $alumno->correo) }}" required>
                 @error('correo')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -128,7 +134,7 @@
 
             <div class="form-group">
                 <label for="fecha_nacimiento">Fecha de Nacimiento *</label>
-                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" value="{{ old('fecha_nacimiento') }}" required>
+                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" value="{{ old('fecha_nacimiento', $alumno->fecha_nacimiento) }}" required>
                 @error('fecha_nacimiento')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -136,7 +142,7 @@
 
             <div class="form-group">
                 <label for="nota_media">Nota Media (0-10) *</label>
-                <input type="number" id="nota_media" name="nota_media" step="0.01" min="0" max="10" value="{{ old('nota_media') }}" required>
+                <input type="number" id="nota_media" name="nota_media" step="0.01" min="0" max="10" value="{{ old('nota_media', $alumno->nota_media) }}" required>
                 @error('nota_media')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -144,7 +150,7 @@
 
             <div class="form-group">
                 <label for="experiencia">Experiencia</label>
-                <textarea id="experiencia" name="experiencia">{{ old('experiencia') }}</textarea>
+                <textarea id="experiencia" name="experiencia">{{ old('experiencia', $alumno->experiencia) }}</textarea>
                 @error('experiencia')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -152,7 +158,7 @@
 
             <div class="form-group">
                 <label for="formacion">Formación</label>
-                <textarea id="formacion" name="formacion">{{ old('formacion') }}</textarea>
+                <textarea id="formacion" name="formacion">{{ old('formacion', $alumno->formacion) }}</textarea>
                 @error('formacion')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -160,7 +166,7 @@
 
             <div class="form-group">
                 <label for="habilidades">Habilidades</label>
-                <textarea id="habilidades" name="habilidades">{{ old('habilidades') }}</textarea>
+                <textarea id="habilidades" name="habilidades">{{ old('habilidades', $alumno->habilidades) }}</textarea>
                 @error('habilidades')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -168,6 +174,10 @@
 
             <div class="form-group">
                 <label for="fotografia">Fotografía</label>
+                @if($alumno->fotografia)
+                    <img src="{{ asset('storage/' . $alumno->fotografia) }}" alt="Foto actual" class="current-photo">
+                    <p style="margin-top: 10px; font-size: 14px; color: #666;">Subir nueva imagen para reemplazar</p>
+                @endif
                 <input type="file" id="fotografia" name="fotografia" accept="image/*">
                 @error('fotografia')
                     <div class="error">{{ $message }}</div>
@@ -176,15 +186,21 @@
 
             <div class="form-group">
                 <label for="cv_pdf">CV en PDF (opcional)</label>
+                @if(file_exists(public_path('storage/cvs/alumno_' . $alumno->id . '.pdf')))
+                    <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                        <a href="{{ asset('storage/cvs/alumno_' . $alumno->id . '.pdf') }}" target="_blank" style="color: #007bff;">📄 Ver PDF actual</a>
+                    </p>
+                    <p style="font-size: 14px; color: #666;">Subir nuevo PDF para reemplazar</p>
+                @endif
                 <input type="file" id="cv_pdf" name="cv_pdf" accept=".pdf">
                 @error('cv_pdf')
                     <div class="error">{{ $message }}</div>
                 @enderror
-            </div>
+            </div>          
 
             <div class="buttons">
-                <button type="submit" class="btn btn-primary">Crear Alumno</button>
-                <a href="{{ route('alumnos.index') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Actualizar Alumno</button>
+                <a href="{{ route('alumnos.show', $alumno) }}" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
     </div>

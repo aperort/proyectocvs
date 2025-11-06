@@ -7,59 +7,86 @@ use Illuminate\Http\Request;
 
 class AlumnoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $alumnos = Alumno::all();
+        return view('alumnos.index', compact('alumnos'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return view('alumnos.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'telefono' => 'required|string|max:255',
+            'correo' => 'required|email|unique:alumnos',
+            'fecha_nacimiento' => 'required|date',
+            'nota_media' => 'required|numeric|min:0|max:10',
+            'fotografia' => 'nullable|image|max:2048',
+            'cv_pdf' => 'nullable|mimes:pdf|max:10240'
+        ]);
+
+        $data = $request->all();
+
+        if ($request->hasFile('fotografia')) {
+            $data['fotografia'] = $request->file('fotografia')->store('fotografias', 'public');
+        }
+
+        $alumno = Alumno::create($data);
+
+        if ($request->hasFile('cv_pdf')) {
+            $request->file('cv_pdf')->storeAs('cvs', 'alumno_' . $alumno->id . '.pdf', 'public');
+        }
+
+        return redirect()->route('alumnos.index')->with('success', 'Alumno creado correctamente');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Alumno $alumno)
     {
-        //
+        return view('alumnos.show', compact('alumno'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Alumno $alumno)
     {
-        //
+        return view('alumnos.edit', compact('alumno'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Alumno $alumno)
     {
-        //
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'telefono' => 'required|string|max:255',
+            'correo' => 'required|email|unique:alumnos,correo,' . $alumno->id,
+            'fecha_nacimiento' => 'required|date',
+            'nota_media' => 'required|numeric|min:0|max:10',
+            'fotografia' => 'nullable|image|max:2048',
+            'cv_pdf' => 'nullable|mimes:pdf|max:10240'
+        ]);
+
+        $data = $request->all();
+
+        if ($request->hasFile('fotografia')) {
+            $data['fotografia'] = $request->file('fotografia')->store('fotografias', 'public');
+        }
+
+        if ($request->hasFile('cv_pdf')) {
+            $request->file('cv_pdf')->storeAs('cvs', 'alumno_' . $alumno->id . '.pdf', 'public');
+        }
+
+        $alumno->update($data);
+
+        return redirect()->route('alumnos.index')->with('success', 'Alumno actualizado correctamente');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Alumno $alumno)
     {
-        //
+        $alumno->delete();
+        return redirect()->route('alumnos.index')->with('success', 'Alumno eliminado correctamente');
     }
 }
