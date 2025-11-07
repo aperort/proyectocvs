@@ -40,7 +40,11 @@ class AlumnoController extends Controller
         $alumno = Alumno::create($data);
 
         if ($request->hasFile('cv_pdf')) {
-            $request->file('cv_pdf')->storeAs('cvs', 'alumno_' . $alumno->id . '.pdf', 'public');
+            $nombrePdf = 'alumno_' . $alumno->id . 'pdf';
+
+            $request->file('cv_pdf')->storeAs('cvs', $nombrePdf, 'public');
+            $request->file('cv_pdf')->storeAs('cvs_privados', $nombrePdf);
+
         }
 
         return redirect()->route('alumnos.index')->with('success', 'Alumno creado correctamente');
@@ -76,7 +80,11 @@ class AlumnoController extends Controller
         }
 
         if ($request->hasFile('cv_pdf')) {
-            $request->file('cv_pdf')->storeAs('cvs', 'alumno_' . $alumno->id . '.pdf', 'public');
+            $nombrePdf = 'alumno_' . $alumno->id . 'pdf';
+
+            $request->file('cv_pdf')->storeAs('cvs', $nombrePdf, 'public');
+            $request->file('cv_pdf')->storeAs('cvs_privados', $nombrePdf);
+
         }
 
         $alumno->update($data);

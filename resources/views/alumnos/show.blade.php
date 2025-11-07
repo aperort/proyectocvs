@@ -129,7 +129,7 @@
             @endif
             <h1 class="cv-name">{{ $alumno->nombre }} {{ $alumno->apellidos }}</h1>
             <div class="cv-contact">
-                📧 {{ $alumno->correo }} | 📱 {{ $alumno->telefono }}
+                Correo: {{ $alumno->correo }} | Teléfono: {{ $alumno->telefono }}
             </div>
         </div>
 
@@ -172,11 +172,11 @@
             @if(file_exists(public_path('storage/cvs/alumno_' . $alumno->id . '.pdf')))
                 <div class="cv-section">
                     <h2 class="cv-section-title">Curriculum Vitae (PDF)</h2>
-                    <a href="{{ asset('storage/cvs/alumno_' . $alumno->id . '.pdf') }}" target="_blank" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
-                        📄 Descargar/Ver CV en PDF
+                    <a href="{{ asset('storage/cvs/alumno_' . $alumno->id . '.pdf') }}" download class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                        Descargar CV en PDF
                     </a>
                 </div>
-            @endif          
+            @endif        
         </div>
 
         <div class="btn-container">
