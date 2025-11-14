@@ -15,7 +15,7 @@ class AlumnoController extends Controller
     public function index(): View
     {
         $alumnos = Alumno::all();
-        return view('alumnos.index', compact('alumnos'));
+        return view('alumnos.index', ['alumnos' => $alumnos]);
     }
 
     /**
@@ -64,7 +64,7 @@ class AlumnoController extends Controller
      */
     public function show(Alumno $alumno): View
     {
-        return view('alumnos.show', compact('alumno'));
+        return view('alumnos.show', ['alumno' => $alumno]);
     }
 
     /**
@@ -72,7 +72,7 @@ class AlumnoController extends Controller
      */
     public function edit(Alumno $alumno): View
     {
-        return view('alumnos.edit', compact('alumno'));
+        return view('alumnos.edit', ['alumno' => $alumno]);
     }
 
     /**
