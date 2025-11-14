@@ -8,3 +8,6 @@ Route::get('/', function () {
 });
 
 Route::resource('alumnos', AlumnoController::class);
+
+// Ruta adicional para descargar PDF
+Route::get('alumnos/{alumno}/pdf', [AlumnoController::class, 'descargarPdf'])->name('alumnos.pdf');

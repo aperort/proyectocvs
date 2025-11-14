@@ -63,6 +63,42 @@
             margin-top: 10px;
             border-radius: 8px;
         }
+        .pdf-preview {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid #28a745;
+        }
+        .pdf-info {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+        .pdf-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-small {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .btn-small:hover {
+            background-color: #0056b3;
+        }
+        .btn-download {
+            background-color: #28a745;
+        }
+        .btn-download:hover {
+            background-color: #218838;
+        }
         .buttons {
             display: flex;
             gap: 10px;
@@ -186,8 +222,23 @@
 
             <div class="form-group">
                 <label for="cv_pdf">CV en PDF (opcional)</label>
-                @if(file_exists(public_path('storage/cvs/alumno_' . $alumno->id . '.pdf')))
-                    <p style="font-size: 14px; color: #666;">Subir nuevo PDF para reemplazar</p>
+                @if(file_exists(storage_path('app/public/cvs/alumno_' . $alumno->id . '.pdf')))
+                    <div class="pdf-preview">
+                        <p class="pdf-info">
+                            <strong>PDF actual:</strong> alumno_{{ $alumno->id }}.pdf
+                        </p>
+                        <div class="pdf-buttons">
+                            <a href="{{ asset('storage/cvs/alumno_' . $alumno->id . '.pdf') }}" target="_blank" class="btn-small">
+                                Ver PDF actual
+                            </a>
+                            <a href="{{ route('alumnos.pdf', $alumno) }}" class="btn-small btn-download">
+                                Descargar PDF
+                            </a>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 14px; color: #666;">Subir nuevo PDF para reemplazar el actual</p>
+                    </div>
+                @else
+                    <p style="font-size: 14px; color: #666; margin-bottom: 10px;">No hay PDF cargado actualmente</p>
                 @endif
                 <input type="file" id="cv_pdf" name="cv_pdf" accept=".pdf">
                 @error('cv_pdf')

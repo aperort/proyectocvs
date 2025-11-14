@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Alumnos</title>
     <style>
+        /* Estilos CSS para la página */
         * {
             margin: 0;
             padding: 0;
@@ -101,15 +102,20 @@
     <div class="container">
         <h1>Lista de Alumnos - CVs</h1>
 
+        {{-- Mensaje de éxito después de crear/editar/eliminar --}}
+        {{-- session('success') contiene el mensaje enviado desde el controlador --}}
         @if(session('success'))
             <div class="alert">
                 {{ session('success') }}
             </div>
         @endif
 
+        {{-- Botón para crear nuevo alumno - Lleva a /alumnos/create --}}
         <a href="{{ route('alumnos.create') }}" class="btn">Crear Nuevo Alumno</a>
 
+        {{-- VERIFICAR SI HAY ALUMNOS REGISTRADOS --}}
         @if($alumnos->count() > 0)
+            {{-- SI HAY ALUMNOS: Mostrar tabla con todos los datos --}}
             <table>
                 <thead>
                     <tr>
@@ -123,8 +129,10 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- BUCLE: Recorrer cada alumno de la colección $alumnos --}}
                     @foreach($alumnos as $alumno)
                         <tr>
+                            {{-- Mostrar datos del alumno en cada columna --}}
                             <td>{{ $alumno->id }}</td>
                             <td>{{ $alumno->nombre }}</td>
                             <td>{{ $alumno->apellidos }}</td>
@@ -132,12 +140,18 @@
                             <td>{{ $alumno->telefono }}</td>
                             <td>{{ $alumno->nota_media }}</td>
                             <td>
+                                {{-- ACCIONES: Botones para ver, editar y eliminar --}}
                                 <div class="actions">
+                                    {{-- Ver CV completo: GET /alumnos/{id} --}}
                                     <a href="{{ route('alumnos.show', $alumno) }}" class="btn-small btn-view">Ver CV</a>
+                                    
+                                    {{-- Editar alumno: GET /alumnos/{id}/edit --}}
                                     <a href="{{ route('alumnos.edit', $alumno) }}" class="btn-small btn-edit">Editar</a>
+                                    
+                                    {{-- Eliminar alumno: DELETE /alumnos/{id} --}}
                                     <form action="{{ route('alumnos.destroy', $alumno) }}" method="POST" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
+                                        @csrf {{-- Token de seguridad obligatorio --}}
+                                        @method('DELETE') {{-- Laravel solo acepta GET y POST, esto simula DELETE --}}
                                         <button type="submit" class="btn-small btn-delete" onclick="return confirm('¿Estás seguro?')">Eliminar</button>
                                     </form>
                                 </div>
@@ -147,6 +161,10 @@
                 </tbody>
             </table>
         @else
+            {{-- 
+                SI NO HAY ALUMNOS: Mostrar mensaje y enlace para crear el primero
+                Este enlace lleva directamente al formulario de creación
+            --}}
             <p>No hay alumnos registrados. <a href="{{ route('alumnos.create') }}">Crear el primero</a></p>
         @endif
     </div>
