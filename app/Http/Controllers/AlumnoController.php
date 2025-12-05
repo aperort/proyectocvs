@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumno;
-use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AlumnoController extends Controller
@@ -12,7 +14,7 @@ class AlumnoController extends Controller
     /**
      * Muestra el listado de todos los alumnos
      */
-    public function index(): View
+    function index(): View
     {
         $alumnos = Alumno::all();
         return view('alumnos.index', ['alumnos' => $alumnos]);
@@ -21,7 +23,7 @@ class AlumnoController extends Controller
     /**
      * Muestra el formulario para crear un nuevo alumno
      */
-    public function create(): View
+    function create(): View
     {
         return view('alumnos.create');
     }
@@ -29,40 +31,65 @@ class AlumnoController extends Controller
     /**
      * Guarda un nuevo alumno en la base de datos
      */
-    public function store(Request $request): RedirectResponse
+    function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'nombre' => 'required|max:255',
-            'apellidos' => 'required|max:255',
-            'telefono' => 'required|max:255',
-            'correo' => 'required|email|unique:alumnos',
+        // Validación similar a PeinadoCreateRequest
+        $validatedData = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'telefono' => 'required|string|max:255',
+            'correo' => 'required|email|unique:alumnos,correo|max:255',
             'fecha_nacimiento' => 'required|date',
-            'nota_media' => 'required|numeric|min:0|max:10',
+            'nota_media' => 'required|numeric|min:0|max:10|decimal:0,2',
+            'experiencia' => 'nullable|string',
+            'formacion' => 'nullable|string',
+            'habilidades' => 'nullable|string',
             'fotografia' => 'nullable|image|max:2048',
             'cv_pdf' => 'nullable|mimes:pdf|max:10240'
         ]);
 
-        $data = $request->except(['fotografia', 'cv_pdf']);
-        $alumno = Alumno::create($data);
+        // Crear alumno con los datos validados (excepto archivos)
+        $alumno = new Alumno($request->except(['fotografia', 'cv_pdf']));
+        $result = false;
 
-        if ($request->hasFile('fotografia')) {
-            $alumno->fotografia = $request->file('fotografia')->store('fotografias', 'public');
-            $alumno->save();
+        try {
+            $result = $alumno->save();
+            $txtMessage = 'El alumno ha sido agregado correctamente.';
+
+            // Subir fotografía si existe
+            if ($request->hasFile('fotografia')) {
+                $ruta = $this->uploadFotografia($request, $alumno);
+                $alumno->fotografia = $ruta;
+                $alumno->save();
+            }
+
+            // Subir PDF si existe
+            if ($request->hasFile('cv_pdf')) {
+                $this->uploadPdf($request, $alumno);
+            }
+        } catch (UniqueConstraintViolationException $e) {
+            $txtMessage = 'El correo ya está registrado.';
+        } catch (QueryException $e) {
+            $txtMessage = 'Error en la base de datos.';
+        } catch (\Exception $e) {
+            $txtMessage = 'Error al crear el alumno.';
         }
 
-        if ($request->hasFile('cv_pdf')) {
-            $nombrePdf = 'alumno_' . $alumno->id . '.pdf';
-            $request->file('cv_pdf')->storeAs('cvs', $nombrePdf, 'public');
-            $request->file('cv_pdf')->storeAs('cvs_privados', $nombrePdf);
-        }
+        $message = [
+            'mensajeTexto' => $txtMessage,
+        ];
 
-        return redirect()->route('alumnos.index')->with('success', 'Alumno creado correctamente');
+        if ($result) {
+            return redirect()->route('alumnos.index')->with($message);
+        } else {
+            return back()->withInput()->withErrors($message);
+        }
     }
 
     /**
      * Muestra el CV completo de un alumno específico
      */
-    public function show(Alumno $alumno): View
+    function show(Alumno $alumno): View
     {
         return view('alumnos.show', ['alumno' => $alumno]);
     }
@@ -70,7 +97,7 @@ class AlumnoController extends Controller
     /**
      * Muestra el formulario para editar un alumno existente
      */
-    public function edit(Alumno $alumno): View
+    function edit(Alumno $alumno): View
     {
         return view('alumnos.edit', ['alumno' => $alumno]);
     }
@@ -78,42 +105,114 @@ class AlumnoController extends Controller
     /**
      * Actualiza los datos de un alumno existente
      */
-    public function update(Request $request, Alumno $alumno): RedirectResponse
+    function update(Request $request, Alumno $alumno): RedirectResponse
     {
-        $request->validate([
-            'nombre' => 'required|max:255',
-            'apellidos' => 'required|max:255',
-            'telefono' => 'required|max:255',
-            'correo' => 'required|email|unique:alumnos,correo,' . $alumno->id,
+        // Validación con excepción del correo actual
+        $validatedData = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'telefono' => 'required|string|max:255',
+            'correo' => 'required|email|max:255|unique:alumnos,correo,' . $alumno->id,
             'fecha_nacimiento' => 'required|date',
-            'nota_media' => 'required|numeric|min:0|max:10',
+            'nota_media' => 'required|numeric|min:0|max:10|decimal:0,2',
+            'experiencia' => 'nullable|string',
+            'formacion' => 'nullable|string',
+            'habilidades' => 'nullable|string',
             'fotografia' => 'nullable|image|max:2048',
             'cv_pdf' => 'nullable|mimes:pdf|max:10240'
         ]);
 
-        $data = $request->except(['fotografia', 'cv_pdf']);
-        $alumno->update($data);
+        $result = false;
 
-        if ($request->hasFile('fotografia')) {
-            $alumno->fotografia = $request->file('fotografia')->store('fotografias', 'public');
-            $alumno->save();
+        // Manejar eliminación de fotografía si se solicita
+        if ($request->deleteFotografia == 'true') {
+            $alumno->fotografia = null;
         }
 
-        if ($request->hasFile('cv_pdf')) {
-            $nombrePdf = 'alumno_' . $alumno->id . '.pdf';
-            $request->file('cv_pdf')->storeAs('cvs', $nombrePdf, 'public');
-            $request->file('cv_pdf')->storeAs('cvs_privados', $nombrePdf);
+        // Actualizar datos del alumno
+        $alumno->fill($request->except(['fotografia', 'cv_pdf', 'deleteFotografia']));
+
+        try {
+            // Subir nueva fotografía si existe
+            if ($request->hasFile('fotografia')) {
+                $ruta = $this->uploadFotografia($request, $alumno);
+                $alumno->fotografia = $ruta;
+            }
+
+            $result = $alumno->save();
+
+            // Subir nuevo PDF si existe
+            if ($request->hasFile('cv_pdf')) {
+                $this->uploadPdf($request, $alumno);
+            }
+
+            $txtMessage = 'El alumno ha sido actualizado correctamente.';
+        } catch (UniqueConstraintViolationException $e) {
+            $txtMessage = 'El correo ya está registrado.';
+        } catch (QueryException $e) {
+            $txtMessage = 'Error en la base de datos.';
+        } catch (\Exception $e) {
+            $txtMessage = 'Error al actualizar el alumno.';
         }
 
-        return redirect()->route('alumnos.index')->with('success', 'Alumno actualizado correctamente');
+        $message = [
+            'mensajeTexto' => $txtMessage,
+        ];
+
+        if ($result) {
+            return redirect()->route('alumnos.index')->with($message);
+        } else {
+            return back()->withInput()->withErrors($message);
+        }
     }
 
     /**
      * Elimina un alumno de la base de datos
      */
-    public function destroy(Alumno $alumno): RedirectResponse
+    function destroy(Alumno $alumno): RedirectResponse
     {
-        $alumno->delete();
-        return redirect()->route('alumnos.index')->with('success', 'Alumno eliminado correctamente');
+        try {
+            $result = $alumno->delete();
+            $txtMessage = 'El alumno se ha eliminado correctamente.';
+        } catch (\Exception $e) {
+            $txtMessage = 'El alumno no se ha podido eliminar.';
+            $result = false;
+        }
+
+        $message = [
+            'mensajeTexto' => $txtMessage,
+        ];
+
+        if ($result) {
+            return redirect()->route('alumnos.index')->with($message);
+        } else {
+            return back()->withInput()->withErrors($message);
+        }
+    }
+
+    /**
+     * Método privado para subir la fotografía
+     * Similar a upload() en PeinadoController
+     */
+    private function uploadFotografia(Request $request, Alumno $alumno): string
+    {
+        $fotografia = $request->file('fotografia');
+        $name = 'alumno_' . $alumno->id . '.' . $fotografia->getClientOriginalExtension();
+        $ruta = $fotografia->storeAs('fotografias', $name, 'public');
+        $fotografia->storeAs('fotografias', $name, 'local');
+        return $ruta;
+    }
+
+    /**
+     * Método privado para subir el PDF del CV
+     * Similar a uploadPdf() en PeinadoController
+     */
+    private function uploadPdf(Request $request, Alumno $alumno): string
+    {
+        $pdf = $request->file('cv_pdf');
+        $name = 'alumno_' . $alumno->id . '.pdf';
+        $ruta = $pdf->storeAs('cvs', $name, 'public');
+        $pdf->storeAs('cvs_privados', $name, 'local');
+        return $ruta;
     }
 }
