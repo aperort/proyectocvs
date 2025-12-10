@@ -192,7 +192,6 @@ class AlumnoController extends Controller
 
     /**
      * Método privado para subir la fotografía
-     * Similar a upload() en PeinadoController
      */
     private function uploadFotografia(Request $request, Alumno $alumno): string
     {
