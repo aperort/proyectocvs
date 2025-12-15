@@ -54,4 +54,5 @@ class Alumno extends Model
     {
         return file_exists(storage_path('app/public/cvs') . '/alumno_' . $this->id . '.pdf');
     }
+
 }

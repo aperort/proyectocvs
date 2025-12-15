@@ -8,6 +8,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Storage;
 
 class AlumnoController extends Controller
 {
@@ -204,7 +205,6 @@ class AlumnoController extends Controller
 
     /**
      * Método privado para subir el PDF del CV
-     * Similar a uploadPdf() en PeinadoController
      */
     private function uploadPdf(Request $request, Alumno $alumno): string
     {
@@ -213,5 +213,51 @@ class AlumnoController extends Controller
         $ruta = $pdf->storeAs('cvs', $name, 'public');
         $pdf->storeAs('cvs_privados', $name, 'local');
         return $ruta;
+    }
+
+    /**
+     * Descarga el CV en PDF del alumno
+     */
+    public function descargarPdf(Alumno $alumno)
+    {
+        // Construimos la ruta relativa dentro del disco 'public'
+        // Coincide con lo que guardaste en uploadPdf: 'cvs/alumno_X.pdf'
+        $path = 'cvs/alumno_' . $alumno->id . '.pdf';
+        // Verificamos si existe en el disco público
+        if (Storage::disk('public')->exists($path)) {
+            // Esto fuerza la descarga con el nombre correcto
+            return Storage::disk('public')->download($path);
+        }
+
+        // Si no existe, volvemos atrás con un error
+        return back()->withErrors(['mensajeTexto' => 'El archivo PDF no se encuentra.']);
+    }
+
+    /**
+     * Muestra la fotografía del alumno evitando la caché
+     */
+    public function mostrarFoto($id)
+    {
+        $alumno = Alumno::find($id);
+
+        // 1. PRIMERO comprobamos si el alumno existe y tiene foto definida en la BD
+        if ($alumno == null || $alumno->fotografia == null) {
+            return response()->file(public_path('assets/img/default-avatar.jpg'));
+        }
+
+        // 2. Ahora que sabemos que el alumno existe, definimos la ruta
+        $path = storage_path('app/public/' . $alumno->fotografia);
+
+        // 3. Comprobamos si el archivo físico realmente está en el disco
+        if (!file_exists($path)) {
+            return response()->file(public_path('assets/img/default-avatar.jpg'));
+        }
+
+        // 4. Todo correcto: Devolvemos la imagen real sin caché
+        return response()->file($path, [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }

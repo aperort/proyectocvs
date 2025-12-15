@@ -11,3 +11,4 @@ Route::resource('alumnos', AlumnoController::class);
 
 // Ruta adicional para descargar PDF
 Route::get('alumnos/{alumno}/pdf', [AlumnoController::class, 'descargarPdf'])->name('alumnos.pdf');
+Route::get('alumnos/{id}/foto', [AlumnoController::class, 'mostrarFoto'])->name('alumnos.foto');

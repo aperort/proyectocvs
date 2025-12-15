@@ -127,11 +127,11 @@
         <div class="cv-header">
             {{-- MOSTRAR FOTOGRAFÍA: Si existe usa la foto guardada, si no usa placeholder --}}
             @if($alumno->fotografia)
-                {{-- asset('storage/...') genera URL pública para archivos en storage/app/public --}}
-                <img src="{{ asset('storage/' . $alumno->fotografia) }}" alt="Foto de {{ $alumno->nombre }}" class="cv-photo">
+                {{-- genera URL pública para archivos en storage/app/public --}}
+                <img src="{{ route('alumnos.foto', $alumno->id) }}" alt="Foto de {{ $alumno->nombre }}" class="cv-photo">
             @else
                 {{-- Imagen de marcador de posición si no hay foto --}}
-                <img src="https://via.placeholder.com/150" alt="Sin foto" class="cv-photo">
+                <img src="{{ route('alumnos.foto', $alumno->id) }}" alt="{{ $alumno->nombre }}" class="cv-photo">
             @endif
             
             {{-- Nombre completo del alumno --}}
@@ -202,7 +202,8 @@
                         - asset() genera la URL pública del PDF
                         - download fuerza la descarga en lugar de abrir en el navegador
                     --}}
-                    <a href="{{ asset('storage/cvs/alumno_' . $alumno->id . '.pdf') }}" download class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                    {{-- Usamos la ruta con nombre 'alumnos.pdf' definida en web.php --}}
+                    <a href="{{ route('alumnos.pdf', $alumno) }}" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
                         Descargar CV en PDF
                     </a>
                 </div>

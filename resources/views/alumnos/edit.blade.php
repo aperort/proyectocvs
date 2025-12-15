@@ -211,7 +211,7 @@
             <div class="form-group">
                 <label for="fotografia">Fotografía</label>
                 @if($alumno->fotografia)
-                    <img src="{{ asset('storage/' . $alumno->fotografia) }}" alt="Foto actual" class="current-photo">
+                    <img src="{{ route('alumnos.foto', $alumno->id) }}" alt="Foto actual" class="current-photo">
                     <p style="margin-top: 10px; font-size: 14px; color: #666;">Subir nueva imagen para reemplazar</p>
                 @endif
                 <input type="file" id="fotografia" name="fotografia" accept="image/*">
